@@ -38,10 +38,12 @@ open class RSIShareViewController: SLComposeServiceViewController {
         saveAndRedirect(message: contentText)
     }
     
-    open override func viewDidAppear(_ animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
-        // This is called after the user selects Post. Do the upload of contentText and/or NSExtensionContext attachments.
+        uploadFiles()
+    }
+
+    open func uploadFiles(){
         if let content = extensionContext!.inputItems[0] as? NSExtensionItem {
             if let contents = content.attachments {
                 for (index, attachment) in (contents).enumerated() {
