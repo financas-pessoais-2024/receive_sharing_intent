@@ -11,7 +11,7 @@ import MobileCoreServices
 import Photos
 
 @available(swift, introduced: 5.0)
-open class RSIShareViewController: SLComposeServiceViewController {
+open class RSIShareViewController: UIViewController {
     var hostAppBundleIdentifier = ""
     var appGroupId = ""
     var sharedMedia: [SharedMediaFile] = []
@@ -21,38 +21,27 @@ open class RSIShareViewController: SLComposeServiceViewController {
     open func shouldAutoRedirect() -> Bool {
         return true
     }
-
-    open override func isContentValid() -> Bool {
-        return true
-    }
-
+    
+    // open override func isContentValid() -> Bool {
+    //     return true
+    // }
+    
     open override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         // load group and app id from build info
         loadIds()
     }
-
-    // Redirect to host app when user click on Post
-    open override func didSelectPost() {
-        saveAndRedirect(message: contentText)
-    }
-
+    
+    // // Redirect to host app when user click on Post
+    // open override func didSelectPost() {
+    //     saveAndRedirect(message: contentText)
+    // }
+    
     open override func viewDidAppear(_ animated: Bool) {
-        // super.viewDidAppear(animated)
-
-         // This is called after the post pop up did appear.
-
-        uploadFiles()
-    }
-
-    open override func configurationItems() -> [Any]! {
-        // To add configuration options via table cells at the bottom of the sheet, return an array of SLComposeSheetConfigurationItem here.
-        return []
-    }
-
-    // Do the upload of contentText and/or NSExtensionContext attachments.
-    open func uploadFiles(){
+        super.viewDidAppear(animated)
+        
+        // This is called after the user selects Post. Do the upload of contentText and/or NSExtensionContext attachments.
         if let content = extensionContext!.inputItems[0] as? NSExtensionItem {
             if let contents = content.attachments {
                 for (index, attachment) in (contents).enumerated() {
@@ -94,27 +83,32 @@ open class RSIShareViewController: SLComposeServiceViewController {
             }
         }
     }
-
+    
+    // open override func configurationItems() -> [Any]! {
+    //     // To add configuration options via table cells at the bottom of the sheet, return an array of SLComposeSheetConfigurationItem here.
+    //     return []
+    // }
+    
     private func loadIds() {
         // loading Share extension App Id
         let shareExtensionAppBundleIdentifier = Bundle.main.bundleIdentifier!
-
-
+        
+        
         // extract host app bundle id from ShareExtension id
         // by default it's <hostAppBundleIdentifier>.<ShareExtension>
         // for example: "com.kasem.sharing.Share-Extension" -> com.kasem.sharing
         let lastIndexOfPoint = shareExtensionAppBundleIdentifier.lastIndex(of: ".")
         hostAppBundleIdentifier = String(shareExtensionAppBundleIdentifier[..<lastIndexOfPoint!])
         let defaultAppGroupId = "group.\(hostAppBundleIdentifier)"
-
-
+        
+        
         // loading custom AppGroupId from Build Settings or use group.<hostAppBundleIdentifier>
         let customAppGroupId = Bundle.main.object(forInfoDictionaryKey: kAppGroupIdKey) as? String
-
+        
         appGroupId = customAppGroupId ?? defaultAppGroupId
     }
-
-
+    
+    
     private func handleMedia(forLiteral item: String, type: SharedMediaType, index: Int, content: NSExtensionItem) {
         sharedMedia.append(SharedMediaFile(
             path: item,
@@ -127,40 +121,43 @@ open class RSIShareViewController: SLComposeServiceViewController {
             }
         }
     }
-
+    
     private func handleMedia(forFile url: URL, type: SharedMediaType, index: Int, content: NSExtensionItem) {
         let fileName = getFileName(from: url, type: type)
         let newPath = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId)!.appendingPathComponent(fileName)
-
+        
         if copyFile(at: url, to: newPath) {
+            // The path should be decoded because Flutter is not expecting url encoded file names
+            let newPathDecoded = newPath.absoluteString.removingPercentEncoding!;
             if type == .video {
                 // Get video thumbnail and duration
                 if let videoInfo = getVideoInfo(from: url) {
+                    let thumbnailPathDecoded = videoInfo.thumbnail?.removingPercentEncoding;
                     sharedMedia.append(SharedMediaFile(
-                        path: newPath.absoluteString,
+                        path: newPathDecoded,
                         mimeType: url.mimeType(),
-                        thumbnail: videoInfo.thumbnail,
+                        thumbnail: thumbnailPathDecoded,
                         duration: videoInfo.duration,
                         type: type
                     ))
                 }
             } else {
                 sharedMedia.append(SharedMediaFile(
-                    path: newPath.absoluteString,
+                    path: newPathDecoded,
                     mimeType: url.mimeType(),
                     type: type
                 ))
             }
         }
-
+        
         if index == (content.attachments?.count ?? 0) - 1 {
             if shouldAutoRedirect() {
                 saveAndRedirect()
             }
         }
     }
-
-
+    
+    
     // Save shared media and redirect to host app
     private func saveAndRedirect(message: String? = nil) {
         let userDefaults = UserDefaults(suiteName: appGroupId)
@@ -169,14 +166,14 @@ open class RSIShareViewController: SLComposeServiceViewController {
         userDefaults?.synchronize()
         redirectToHostApp()
     }
-
+    
     private func redirectToHostApp() {
         // ids may not loaded yet so we need loadIds here too
         loadIds()
         let url = URL(string: "\(kSchemePrefix)-\(hostAppBundleIdentifier):share")
         var responder = self as UIResponder?
         let selectorOpenURL = sel_registerName("openURL:")
-
+        
         while (responder != nil) {
             if (responder?.responds(to: selectorOpenURL))! {
                 _ = responder?.perform(selectorOpenURL, with: url)
@@ -185,20 +182,20 @@ open class RSIShareViewController: SLComposeServiceViewController {
         }
         extensionContext!.completeRequest(returningItems: [], completionHandler: nil)
     }
-
+    
     private func dismissWithError() {
         print("[ERROR] Error loading data!")
         let alert = UIAlertController(title: "Error", message: "Error loading data", preferredStyle: .alert)
-
+        
         let action = UIAlertAction(title: "Error", style: .cancel) { _ in
             self.dismiss(animated: true, completion: nil)
         }
-
+        
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
         extensionContext!.completeRequest(returningItems: [], completionHandler: nil)
     }
-
+    
     private func getFileName(from url: URL, type: SharedMediaType) -> String {
         var name = url.lastPathComponent
         if name.isEmpty {
@@ -215,7 +212,7 @@ open class RSIShareViewController: SLComposeServiceViewController {
         }
         return name
     }
-
+    
     private func copyFile(at srcURL: URL, to dstURL: URL) -> Bool {
         do {
             if FileManager.default.fileExists(atPath: dstURL.path) {
@@ -228,16 +225,16 @@ open class RSIShareViewController: SLComposeServiceViewController {
         }
         return true
     }
-
+    
     private func getVideoInfo(from url: URL) -> (thumbnail: String?, duration: Double)? {
         let asset = AVAsset(url: url)
         let duration = (CMTimeGetSeconds(asset.duration) * 1000).rounded()
         let thumbnailPath = getThumbnailPath(for: url)
-
+        
         if FileManager.default.fileExists(atPath: thumbnailPath.path) {
             return (thumbnail: thumbnailPath.absoluteString, duration: duration)
         }
-
+        
         var saved = false
         let assetImgGenerate = AVAssetImageGenerator(asset: asset)
         assetImgGenerate.appliesPreferredTrackTransform = true
@@ -250,10 +247,10 @@ open class RSIShareViewController: SLComposeServiceViewController {
         } catch {
             saved = false
         }
-
+        
         return saved ? (thumbnail: thumbnailPath.absoluteString, duration: duration): nil
     }
-
+    
     private func getThumbnailPath(for url: URL) -> URL {
         let fileName = Data(url.lastPathComponent.utf8).base64EncodedString().replacingOccurrences(of: "==", with: "")
         let path = FileManager.default
@@ -261,7 +258,7 @@ open class RSIShareViewController: SLComposeServiceViewController {
             .appendingPathComponent("\(fileName).jpg")
         return path
     }
-
+    
     private func toData(data: [SharedMediaFile]) -> Data {
         let encodedData = try? JSONEncoder().encode(data)
         return encodedData!
@@ -281,7 +278,7 @@ extension URL {
                 }
             }
         }
-
+        
         return "application/octet-stream"
     }
 }

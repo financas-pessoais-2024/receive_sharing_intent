@@ -34,16 +34,16 @@ public class SwiftReceiveSharingIntentPlugin: NSObject, FlutterPlugin, FlutterSt
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         
         switch call.method {
-        case "getInitialMedia":
-            result(toJson(data: self.initialMedia))
-        case "reset":
-            self.initialMedia = nil
-            self.latestMedia = nil
-            result(nil)
-        default:
-            result(FlutterMethodNotImplemented)
+            case "getInitialMedia":
+                result(toJson(data: self.initialMedia))
+            case "reset":
+                self.initialMedia = nil
+                self.latestMedia = nil
+                result(nil)
+            default:
+                result(FlutterMethodNotImplemented)
         }
-    }
+ }
     
     // By Adding bundle id to prefix, we'll ensure that the correct application will be opened
     // - found the issue while developing multiple applications using this library, after "application(_:open:options:)" is called, the first app using this librabry (first app by bundle id alphabetically) is opened
@@ -239,33 +239,33 @@ public enum SharedMediaType: String, Codable, CaseIterable {
     public var toUTTypeIdentifier: String {
         if #available(iOS 14.0, *) {
             switch self {
-            case .image:
-                return UTType.image.identifier
-            case .video:
-                return UTType.movie.identifier
-            case .text:
-                return UTType.text.identifier
-    //         case .audio:
-    //             return UTType.audio.identifier
-            case .file:
-                return UTType.fileURL.identifier
-            case .url:
-                return UTType.url.identifier
+                case .image:
+                    return UTType.image.identifier
+                case .video:
+                    return UTType.movie.identifier
+                case .text:
+                    return UTType.text.identifier
+        //         case .audio:
+        //             return UTType.audio.identifier
+                case .file:
+                    return UTType.fileURL.identifier
+                case .url:
+                    return UTType.url.identifier
             }
         }
         switch self {
-        case .image:
-            return "public.image"
-        case .video:
-            return "public.movie"
-        case .text:
-            return "public.text"
-//         case .audio:
-//             return "public.audio"
-        case .file:
-            return "public.file-url"
-        case .url:
-            return "public.url"
+            case .image:
+                return "public.image"
+            case .video:
+                return "public.movie"
+            case .text:
+                return "public.text"
+    //         case .audio:
+    //             return "public.audio"
+            case .file:
+                return "public.file-url"
+            case .url:
+                return "public.url"
         }
     }
 }
