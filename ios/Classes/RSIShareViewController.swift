@@ -39,7 +39,7 @@ open class RSIShareViewController: SLComposeServiceViewController {
     }
 
     open override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
+        // super.viewDidAppear(animated)
 
          // This is called after the post pop up did appear.
 
